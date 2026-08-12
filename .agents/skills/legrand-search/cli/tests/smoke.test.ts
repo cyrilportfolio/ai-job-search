@@ -18,15 +18,20 @@ import { runCLI, parseJSON, type CLIResult } from "./helpers.js"
 const inCI = Boolean(process.env.CI)
 
 function assertNotWafBlocked(result: CLIResult): void {
-  if (result.exitCode !== 0) {
-    try {
-      const err = JSON.parse(result.stderr)
-      if (err.code === "WAF_BLOCKED") {
-        throw new Error("WAF_BLOCKED — likely request-volume reputation, not a parser bug. Wait and rerun (see helpers.ts).")
-      }
-    } catch {
-      // stderr wasn't JSON — fall through and let parseJSON's own error surface below.
-    }
+  if (result.exitCode === 0) return
+  // Parsed separately from the throw below: a throw inside this try would be caught by its
+  // own catch and silently swallowed — that was the bug here (the descriptive message below
+  // never actually surfaced; parseJSON's generic error fired instead). Fixed by parsing
+  // first, then throwing outside the try/catch.
+  let code: string | undefined
+  try {
+    code = (JSON.parse(result.stderr) as { code?: string }).code
+  } catch {
+    // stderr wasn't JSON — fall through and let parseJSON's own error surface below.
+    return
+  }
+  if (code === "WAF_BLOCKED") {
+    throw new Error("WAF_BLOCKED — likely request-volume reputation, not a parser bug. Wait and rerun (see helpers.ts).")
   }
 }
 
