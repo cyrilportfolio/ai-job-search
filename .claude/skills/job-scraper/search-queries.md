@@ -81,6 +81,35 @@ Your working languages and levels are in CLAUDE.md's Languages table. When filte
 
 Only include jobs posted within the last 14 days, or with an application deadline that has not yet passed. If a posting date cannot be determined, include it but flag as "date unknown".
 
+## Sources en mode alerte (non-scrapables)
+
+Ces portails ne doivent **jamais** avoir de skill de scraping dédiée (`.agents/skills/*-search/`),
+même pour un usage personnel à faible volume. Couverture uniquement via alerte e-mail du
+portail → `/gmail-sync` → `/apply <url>` sur chaque offre individuelle.
+
+- **indeed.lu, indeed.fr, optioncarriere.lu, lhh.com, andersonwise.lu, lesfrontaliers.lu**
+  — exclues par règle absolue de l'utilisateur (audit du 12/08/2026), raison non détaillée
+  ici.
+- **en.jobs.lu** (hôte canonique ; `www.jobs.lu` redirige dessus) — `Jobs.aspx` (recherche)
+  renvoie un challenge Akamai Bot Manager (JS/crypto, cookies `_abck`/`bm_sz`, page
+  "Challenge Validation") à une requête HTTP simple, reproductible sur plusieurs essais.
+  Constaté et documenté le 12/08/2026. `robots.txt` est absent (404) sur les trois hôtes —
+  ce n'est donc pas un refus déclaré du site, mais une protection technique active qu'aucun
+  en-tête honnête ne contourne (elle exige l'exécution de JS, pas seulement un User-Agent
+  crédible). Pas de tentative de contournement : voir `09-web-research.md`, qui distingue
+  explicitement le pare-feu basé sur l'en-tête (contournable par de bons en-têtes) du refus
+  actif du site.
+  **Nuance :** la reconnaissance faite le matin même du 12/08/2026 avait obtenu 59 résultats
+  sur `Jobs.aspx?keywords=comptable` sans rencontrer de challenge. La protection est donc
+  récente dans la journée, sélective (peut-être liée à la réputation de l'IP source), ou
+  intermittente — pas nécessairement permanente. **À retester dans ~6 mois** via
+  `python3 tools/robots_check.py` puis un fetch direct, la situation peut évoluer dans les
+  deux sens (protection renforcée ou retirée).
+  Route de remplacement : alerte e-mail quotidienne jobs.lu (compte existant) →
+  `/gmail-sync` → `/apply <url>`. Les fiches individuelles (`ApplyForJob.aspx?Id=...`)
+  restent lisibles dans un navigateur normal, donc `/apply` fonctionnera sur une URL jobs.lu
+  même si le CLI de recherche n'existe pas.
+
 ## Adapting Queries
 
 If the user specifies a focus area, select queries from the matching category and also generate 2-3 custom queries for that focus. For example:
