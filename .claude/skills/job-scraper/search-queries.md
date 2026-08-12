@@ -90,40 +90,47 @@ portail → `/gmail-sync` → `/apply <url>` sur chaque offre individuelle.
 - **indeed.lu, indeed.fr, optioncarriere.lu, lhh.com, andersonwise.lu, lesfrontaliers.lu**
   — exclues par règle absolue de l'utilisateur (audit du 12/08/2026), raison non détaillée
   ici.
-- **en.jobs.lu** (hôte canonique ; `www.jobs.lu` redirige dessus) — `Jobs.aspx` (recherche)
-  renvoie un challenge Akamai Bot Manager (JS/crypto, cookies `_abck`/`bm_sz`, page
-  "Challenge Validation") à une requête HTTP simple, reproductible sur plusieurs essais.
-  Constaté et documenté le 12/08/2026. `robots.txt` est absent (404) sur les trois hôtes —
-  ce n'est donc pas un refus déclaré du site, mais une protection technique active qu'aucun
-  en-tête honnête ne contourne (elle exige l'exécution de JS, pas seulement un User-Agent
-  crédible). Pas de tentative de contournement : voir `09-web-research.md`, qui distingue
-  explicitement le pare-feu basé sur l'en-tête (contournable par de bons en-têtes) du refus
-  actif du site.
-  **Nuance :** la reconnaissance faite le matin même du 12/08/2026 avait obtenu 59 résultats
-  sur `Jobs.aspx?keywords=comptable` sans rencontrer de challenge. La protection est donc
-  récente dans la journée, sélective (peut-être liée à la réputation de l'IP source), ou
-  intermittente — pas nécessairement permanente. **À retester dans ~6 mois** via
-  `python3 tools/robots_check.py` puis un fetch direct, la situation peut évoluer dans les
-  deux sens (protection renforcée ou retirée).
-  Route de remplacement : alerte e-mail quotidienne jobs.lu (compte existant) →
-  `/gmail-sync` → `/apply <url>`. Les fiches individuelles (`ApplyForJob.aspx?Id=...`)
-  restent lisibles dans un navigateur normal, donc `/apply` fonctionnera sur une URL jobs.lu
-  même si le CLI de recherche n'existe pas.
 - **moovijob.com** — un Cloudflare Managed Challenge (JS/cookies, en-tête
   `cf-mitigated: challenge`, page "Just a moment...") a bloqué la page de listing
   (`/offres-emploi/jobs-luxembourg`) et même la page d'accueil, de façon reproductible sur
   plusieurs essais. Constaté et documenté le 12/08/2026. `robots.txt` n'interdit pas les
-  chemins visés — même schéma que `en.jobs.lu` (Akamai) le même jour : ce n'est pas un refus
-  déclaré du site, mais une protection technique active exigeant l'exécution de JS, hors de
-  portée de tout en-tête honnête. Pas de tentative de contournement, même règle que ci-dessus.
-  **Nuance :** la reconnaissance faite le matin même du 12/08/2026 avait lu ces pages sans
-  challenge. Protection récente, sélective (réputation IP ou User-Agent), ou intermittente —
-  pas nécessairement permanente. **À retester dans ~6 mois** via
-  `python3 tools/robots_check.py` puis un fetch direct.
+  chemins visés : ce n'est pas un refus déclaré du site, mais une protection technique active
+  exigeant l'exécution de JS, hors de portée de tout en-tête honnête. Pas de tentative de
+  contournement, même règle que ci-dessus.
+  **Confirmé UA-indépendant (contrairement à `en.jobs.lu`, voir plus bas) :** retesté le
+  12/08/2026 avec un UA honnête sans préfixe navigateur (`moovijob-search-cli/1.0 (personal
+  job search)`) — toujours 403. Le blocage tient donc à Cloudflare lui-même, pas à un motif
+  d'UA suspect. **À retester dans ~6 mois** via `python3 tools/robots_check.py` puis un fetch
+  direct, la situation peut évoluer.
   Route de remplacement : alertes e-mail Moovijob quotidiennes (comptes existants) →
   `/gmail-sync` → `/apply <url>`. Egalement candidat à une passe manuelle hebdomadaire via
   Claude in Chrome (session navigateur réelle, résout le challenge comme un utilisateur
   normal) si une couverture plus large que les alertes e-mail s'avère nécessaire.
+
+## Sources à réévaluer (candidates /add-portal, pas encore construites)
+
+Contrairement aux portails de la section précédente, celles-ci ne sont **pas** exclues par
+principe — la reconnaissance disponible est juste insuffisante ou contradictoire pour
+lancer `/add-portal` en confiance. Alerte e-mail en attendant.
+
+- **en.jobs.lu** (hôte canonique ; `www.jobs.lu` redirige dessus) — un challenge Akamai Bot
+  Manager (JS/crypto, cookies `_abck`/`bm_sz`, page "Challenge Validation") a été constaté le
+  matin du 12/08/2026 sur `Jobs.aspx?keywords=...`, reproductible sur plusieurs essais dans
+  la session qui l'a découvert. **Levé au retest le même jour** : `curl` avec UA par défaut,
+  puis avec l'UA honnête `jobslu-search-cli/1.0 (personal job search)`, puis même avec l'UA
+  à motif "navigateur" (`Mozilla/5.0 (compatible; jobslu-search-cli/1.0)`) qui avait
+  initialement déclenché le challenge — les trois → `200`, contenu réel, aucun challenge.
+  Le blocage était donc **intermittent** (probablement réputation IP/session, pas un motif
+  d'UA comme pour `legrand-associates.com` — voir `.agents/skills/legrand-search/url-reference.md`
+  pour ce cas-là) plutôt que permanent. `robots.txt` est absent (404) sur les trois hôtes —
+  aucun refus déclaré du site dans tous les cas.
+  **Candidat à une nouvelle passe `/add-portal`, dans une session fraîche.** Le CLI généré
+  devra détecter le challenge Akamai explicitement (page "Challenge Validation", cookies
+  `_abck`/`bm_sz`, statut 200 mais contenu non-JSON/non-listing) et le signaler comme une
+  erreur claire plutôt que de planter ou de renvoyer un résultat vide silencieux — un
+  contenu 200 aujourd'hui ne garantit pas l'absence de challenge demain, contrairement à un
+  404/403 stable. Alerte e-mail quotidienne jobs.lu (compte existant) → `/gmail-sync` →
+  `/apply <url>` reste la couverture de secours en attendant cette passe.
 
 ## Adapting Queries
 
