@@ -21,15 +21,15 @@ authentication, no API key, **zero runtime dependencies** — runs with just `bu
 
 `robots.txt` is absent (404) on `en.jobs.lu` and its two aliases — no declared refusal, so
 no `assertAllowedUrl`-style guard is needed here. The site does, however, sit behind Akamai
-Bot Manager, which was verified live during this skill's generation to challenge this CLI's
-own honest User-Agent (`jobslu-search-cli/1.0 (personal job search)`) on every attempt that
-day, while generic tool/browser UAs pass through. **This CLI does not switch to a
-common-tool UA to dodge that — doing so on purpose would be impersonation, not honest
-identification, and is not something this skill will ever do, including temporarily for a
-test.** Instead it detects the challenge page explicitly and fails with a clear
-`CHALLENGE_BLOCKED` error rather than silently returning zero results. See
-`url-reference.md` for the full A/B test and re-verification notes. Keep request volume low
-regardless of whether the block is currently active.
+Bot Manager, which serves a challenge page on some requests and real content on others.
+Confirmed via a strictly interleaved A/B test (2026-08-12): the block is **intermittent and
+independent of User-Agent** — it is not caused by this CLI's honest UA. Regardless of cause,
+this CLI never switches to a common-tool UA to dodge a block — doing so on purpose would be
+impersonation, not honest identification, and is not something this skill will ever do,
+including temporarily for a test. It detects the challenge page explicitly and fails with a
+clear `CHALLENGE_BLOCKED` error rather than silently returning zero results. See
+`url-reference.md` for the confirmed cause and the interleaved-testing method required for
+any future retest. Keep request volume low regardless of whether the block is currently active.
 
 ## Commands
 

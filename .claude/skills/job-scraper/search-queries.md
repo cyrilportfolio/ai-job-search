@@ -120,20 +120,22 @@ lancer `/add-portal` en confiance. Alerte e-mail en attendant.
 - **en.jobs.lu** (hôte canonique ; `www.jobs.lu`/`jobs.lu` redirigent dessus) — skill
   `jobslu-search` générée le 12/08/2026, voir `.agents/skills/jobslu-search/`. `robots.txt`
   absent (404) sur les trois hôtes, aucun refus déclaré.
-  **Blocage Akamai Bot Manager : la lecture "intermittent, indépendant de l'UA" du premier
-  passage (matin du 12/08) était incomplète.** Un nouveau test A/B plus serré, le même jour
-  lors de la génération de la skill, montre une corrélation reproductible avec l'UA : tout
-  UA personnalisé de type outil (`jobslu-search-cli/1.0 (personal job search)`, sa variante
-  `/1.1`, et même l'ancienne forme "navigateur" `Mozilla/5.0 (compatible; ...)`) déclenche le
-  challenge à chaque tentative (5/5), alors que des UA génériques très répandus (`curl/8.x`
-  nu, `python-requests/2.31.0`, un vrai UA de navigateur) passent systématiquement. Détail
-  complet et tableau du test dans `.agents/skills/jobslu-search/url-reference.md`. La skill
-  garde volontairement l'UA honnête par défaut (jamais de bascule vers un UA générique pour
-  contourner le blocage — ce serait de l'usurpation, pas une identification honnête) et
-  détecte explicitement la page de challenge (`CHALLENGE_BLOCKED`) plutôt que de retourner un
-  résultat vide silencieux. Statut au 12/08/2026 soir : toujours bloqué avec l'UA honnête
-  (retesté après plusieurs minutes). Alerte e-mail jobs.lu → `/gmail-sync` → `/apply <url>`
-  reste la couverture de secours quand `CHALLENGE_BLOCKED` apparaît.
+  **Blocage Akamai Bot Manager : confirmé intermittent et indépendant de l'UA**, via un test
+  A/B en alternance stricte (UA custom / UA par défaut alternés à chaque appel, ~30s, le
+  12/08/2026) — `200` avec contenu réel sur les deux UA à chaque appel. Un test intermédiaire
+  ce même jour avait conclu à tort à une corrélation avec l'UA (UA custom bloqué 5/5, UA
+  génériques systématiquement passés) ; cette lecture était une erreur de méthode — deux
+  séries successives par UA au lieu d'une alternance stricte, ce qui confond la cause UA avec
+  la variation temporelle du blocage — et a été corrigée partout (ce fichier,
+  `.agents/skills/jobslu-search/url-reference.md`, `SKILL.md`, le code du CLI, les tests, la
+  mémoire projet). Tout futur test de ce blocage doit alterner les UA à chaque requête,
+  jamais en séries successives. Détail dans `.agents/skills/jobslu-search/url-reference.md`.
+  La skill garde volontairement l'UA honnête par défaut (jamais de bascule vers un UA
+  générique — ce serait de l'usurpation, pas une identification honnête, et de toute façon
+  inutile puisque le blocage est confirmé indépendant de l'UA) et détecte explicitement la
+  page de challenge (`CHALLENGE_BLOCKED`) plutôt que de retourner un résultat vide silencieux.
+  Alerte e-mail jobs.lu → `/gmail-sync` → `/apply <url>` reste la couverture de secours quand
+  `CHALLENGE_BLOCKED` apparaît.
 
 ## Adapting Queries
 

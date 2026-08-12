@@ -16,38 +16,28 @@ real disallowed paths and needs `assertAllowedUrl`).
 
 ## Bot protection: Akamai Bot Manager challenge (read before assuming a fetch failed)
 
-`en.jobs.lu` sits behind Akamai. A first pass on 2026-08-12 morning saw a challenge on every
-UA; a retest that same evening got `200` with real content on all three UAs tried, which the
-handoff read as a resolved, UA-independent, time-based intermittency.
+`en.jobs.lu` sits behind Akamai, which serves a challenge page (see below) on some requests
+and real content on others. **Confirmed 2026-08-12 via a strictly interleaved A/B test
+(custom CLI UA and a bare-default UA alternated on every single call, ~30s total span): both
+UAs got `200` with real content on every call.** The block is **intermittent and
+UA-independent** — it is not caused by, and does not correlate with, this CLI's honest User
+-Agent string.
 
-**Re-verified live during this skill's generation (2026-08-12, later the same day) with a
-tighter A/B test, and that reading needs correcting:** the block reproduces on demand and
-correlates with the **User-Agent string**, not just time:
+An earlier same-day test run wrongly concluded the opposite (UA-correlated: honest UA
+blocked 5/5, generic UAs passed every time) and that conclusion briefly lived in this file,
+in `search-queries.md`, and in a project memory. **It was a methodology error, not a
+real finding, and has been retracted everywhere.** That test ran one UA several times, then
+switched and ran the other UA several times — two successive series, not interleaved calls.
+Since the block itself flips on and off over time independent of UA, running same-UA calls
+back-to-back makes whichever time-window each series happened to land in look like a
+UA effect. **Any future test of this block must alternate UAs on every single request
+(A, B, A, B, ...), never run one UA's probes as a block before switching to the other** —
+that is the only design that actually separates a UA cause from a time-based one.
 
-| User-Agent tried | Result |
-|---|---|
-| `jobslu-search-cli/1.0 (personal job search)` (this skill's honest UA) | **Blocked** — `Challenge Validation` page, every attempt (5/5) |
-| `jobslu-search-cli/1.1 (personal job search)` (trivial version bump) | **Blocked** — same page |
-| `Mozilla/5.0 (compatible; jobslu-search-cli/1.0)` (the old browser-prefixed form) | **Blocked** — same page |
-| `curl/8.x` (bare curl default, no `-A`) | **Passed** — real 76KB listing page, repeatably |
-| `python-requests/2.31.0` | **Passed** — real content |
-| Full Chrome UA string | **Passed** — real content |
-
-So: any custom, tool-identifying UA (whether or not it uses the flagged
-`Mozilla/5.0 (compatible; ...)` prefix — see `legrand-search/url-reference.md` for that
-separate, unrelated finding) gets challenged here, while generic/extremely-common UA
-strings (bare `curl`, `python-requests`, real browsers) pass. This is very likely an Akamai
-heuristic that trusts UA strings by how common/recognized they are, rather than a
-browser-vs-non-browser check — the opposite shape of the legrand WAF finding. **Do not
-conclude from this that switching to a common-tool UA is the fix**: doing so on purpose to
-dodge detection would be impersonation, not honest identification, and this skill's contract
-forbids it (see `SKILL.md` and `.claude/commands/add-portal.md`'s portal-skill contract).
-The CLI keeps the honest UA and instead **detects the challenge page explicitly** (see
-below) rather than silently parsing it as zero results.
-
-Whether this is permanent or will lift again like the first pass did is unknown — re-verify
-UA-by-UA rather than assuming either "it's fixed" or "it's still blocked" from a single probe.
-**Retest via a fresh set of `curl -A` probes before reopening this file's conclusions.**
+Given it's confirmed intermittent and UA-independent, this CLI's own honest-UA requests will
+sometimes hit the challenge and sometimes not, on no predictable schedule discovered so far.
+That is exactly what `CHALLENGE_BLOCKED` (below) exists to handle cleanly — retry later, it
+is not a "no results" answer and not a reason to consider changing the UA.
 
 ### Detecting the challenge page
 
@@ -152,5 +142,8 @@ no `href`), so `applyUrl` in the CLI's output is the detail page URL itself.
   portal-skill contract — separate from and checked before the `CHALLENGE_BLOCKED` check
   above, since a challenge page is a 200, not a 404/429/5xx.
 - Test query used during generation and live-verified: `comptable` → 59 results across 2 pages.
-- **Re-verify this file's Akamai section in ~1-2 months** rather than trusting it indefinitely
-  — both the "blocked" and "resolved" readings have each looked true on a given day this week.
+- The Akamai section above is settled (intermittent, UA-independent, confirmed via an
+  interleaved A/B test) — no need to re-open it from scratch, but if `CHALLENGE_BLOCKED`
+  starts firing on most/all calls rather than intermittently, that would be a real change
+  worth re-testing with the interleaved method described above, not reason enough on its own
+  to suspect the UA.

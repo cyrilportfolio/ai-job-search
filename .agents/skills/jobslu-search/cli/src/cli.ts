@@ -3,9 +3,10 @@
 // external CLI framework, so it runs anywhere `bun` is available with zero install beyond
 // the repo clone.
 //
-// This portal sits behind Akamai Bot Manager, which challenges this CLI's honest User-Agent
-// (see helpers.ts and url-reference.md). A CHALLENGE_BLOCKED error means the fetch never
-// reached real content — wait and retry, it is not a "no results" answer.
+// This portal sits behind Akamai Bot Manager, which intermittently challenges requests
+// regardless of User-Agent (confirmed via an interleaved A/B test — see helpers.ts and
+// url-reference.md). A CHALLENGE_BLOCKED error means the fetch never reached real content —
+// wait and retry, it is not a "no results" answer.
 
 import { runSearch, type SearchOpts } from "./commands/search.js"
 import { runDetail, type DetailOpts } from "./commands/detail.js"
@@ -59,9 +60,9 @@ EXAMPLES
   bun run src/cli.ts search -q "developer" -l luxembourg --jobage 7 --format table
   bun run src/cli.ts detail 287136 --format plain
 
-Personal use only. This portal's Akamai bot protection challenges this CLI's honest UA
-intermittently — a CHALLENGE_BLOCKED error means "try again later", not "no results". See
-url-reference.md.
+Personal use only. This portal's Akamai bot protection blocks requests intermittently
+(confirmed unrelated to User-Agent) — a CHALLENGE_BLOCKED error means "try again later", not
+"no results". See url-reference.md.
 `
 
 async function main(): Promise<number> {
