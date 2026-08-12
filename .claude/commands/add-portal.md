@@ -90,7 +90,7 @@ These conventions are what make portal skills interchangeable for `/scrape` and 
 - **`SKILL.md` body:** what the skill searches, the personal-use warning if Step 2 found terms restrictions, command reference with flags, 4-6 usage examples using the user's market (real cities, realistic roles), output-format table, and a Notes section recording portal quirks found in Step 2. If Step 2.5 found the portal needs a credential, add a **Setup** section naming the service, the exact environment variable to export, and the fact that every call is billed - stated where the user reads it before running the skill, not after.
 - **`url-reference.md`:** the endpoints, parameters table, and response-structure notes from Step 2 - this is the file a future maintainer needs when the portal changes its markup.
 - **`package.json`:** name `<portal>-cli`, `"type": "module"`, scripts `start`, `test` (`bun test --timeout 30000`), and `typecheck` (`tsc --noEmit`); dev-only dependencies in the zero-dependency default.
-- **`tests/`:** copy `runCLI`/`parseJSON` from `jobindex-search/cli/tests/helpers.ts`, then add a small live smoke-test file: `search` with the test query returns exit code 0 and ≥1 result with non-null `id`/`title`/`url`; a bogus flag or missing required arg exits 1 with a JSON error on stderr.
+- **`tests/`:** copy `runCLI`/`parseJSON` from `jobindex-search/cli/tests/helpers.ts`, then add a small live smoke-test file: `search` with the test query returns exit code 0 and ≥1 result with non-null `id`/`title`/`url`; a bogus flag or missing required arg exits 1 with a JSON error on stderr. **Network-touching tests must skip in CI**: wrap each live `describe` block in `describe.skipIf(Boolean(process.env.CI))(...)` (bun:test), with a one-line comment explaining why — CI runs `bun test` directly rather than `bun run test`, so `package.json`'s `--timeout` never applies there, only bun:test's own 5000ms-per-test default does, which real network calls (and portals with a mandatory crawl-delay, or WAF-sensitive ones) can easily exceed; CI's own "Run fixture/mock tests when present" step is upstream convention for offline-only tests. Tests that don't touch the network — `assertAllowedUrl`/robots-guard checks, bad-flag/missing-id error handling — must stay unconditional so CI still exercises them on every push. Verify locally with both `CI=1 bun test` (must pass fast, zero network) and the normal `bun run test` (must stay green, live).
 
 ---
 
@@ -112,7 +112,7 @@ Never register a portal skill that has not returned real results. Markup assumpt
    bun run src/cli.ts detail <id> --format plain
    ```
    Verify the description is readable text (entities decoded, tags stripped, paragraph breaks preserved).
-5. Run the test suite: `bun run test`.
+5. Run the test suite twice: `CI=1 bun test` (must pass fast, with zero network calls — confirms the live `describe` blocks are actually being skipped) and `bun run test` (must stay green, live).
 6. Keep volume low during iteration - a handful of requests, not a crawl. If the portal rate-limits you mid-test, back off and tell the user.
 
 Do not proceed to Step 5 until search, detail, and tests all pass.
