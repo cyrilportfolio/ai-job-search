@@ -113,24 +113,27 @@ Contrairement aux portails de la section précédente, celles-ci ne sont **pas**
 principe — la reconnaissance disponible est juste insuffisante ou contradictoire pour
 lancer `/add-portal` en confiance. Alerte e-mail en attendant.
 
-- **en.jobs.lu** (hôte canonique ; `www.jobs.lu` redirige dessus) — un challenge Akamai Bot
-  Manager (JS/crypto, cookies `_abck`/`bm_sz`, page "Challenge Validation") a été constaté le
-  matin du 12/08/2026 sur `Jobs.aspx?keywords=...`, reproductible sur plusieurs essais dans
-  la session qui l'a découvert. **Levé au retest le même jour** : `curl` avec UA par défaut,
-  puis avec l'UA honnête `jobslu-search-cli/1.0 (personal job search)`, puis même avec l'UA
-  à motif "navigateur" (`Mozilla/5.0 (compatible; jobslu-search-cli/1.0)`) qui avait
-  initialement déclenché le challenge — les trois → `200`, contenu réel, aucun challenge.
-  Le blocage était donc **intermittent** (probablement réputation IP/session, pas un motif
-  d'UA comme pour `legrand-associates.com` — voir `.agents/skills/legrand-search/url-reference.md`
-  pour ce cas-là) plutôt que permanent. `robots.txt` est absent (404) sur les trois hôtes —
-  aucun refus déclaré du site dans tous les cas.
-  **Candidat à une nouvelle passe `/add-portal`, dans une session fraîche.** Le CLI généré
-  devra détecter le challenge Akamai explicitement (page "Challenge Validation", cookies
-  `_abck`/`bm_sz`, statut 200 mais contenu non-JSON/non-listing) et le signaler comme une
-  erreur claire plutôt que de planter ou de renvoyer un résultat vide silencieux — un
-  contenu 200 aujourd'hui ne garantit pas l'absence de challenge demain, contrairement à un
-  404/403 stable. Alerte e-mail quotidienne jobs.lu (compte existant) → `/gmail-sync` →
-  `/apply <url>` reste la couverture de secours en attendant cette passe.
+*(en.jobs.lu retiré de cette section — skill construite, voir ci-dessous.)*
+
+## Sources couvertes par un skill (historique de reconnaissance)
+
+- **en.jobs.lu** (hôte canonique ; `www.jobs.lu`/`jobs.lu` redirigent dessus) — skill
+  `jobslu-search` générée le 12/08/2026, voir `.agents/skills/jobslu-search/`. `robots.txt`
+  absent (404) sur les trois hôtes, aucun refus déclaré.
+  **Blocage Akamai Bot Manager : la lecture "intermittent, indépendant de l'UA" du premier
+  passage (matin du 12/08) était incomplète.** Un nouveau test A/B plus serré, le même jour
+  lors de la génération de la skill, montre une corrélation reproductible avec l'UA : tout
+  UA personnalisé de type outil (`jobslu-search-cli/1.0 (personal job search)`, sa variante
+  `/1.1`, et même l'ancienne forme "navigateur" `Mozilla/5.0 (compatible; ...)`) déclenche le
+  challenge à chaque tentative (5/5), alors que des UA génériques très répandus (`curl/8.x`
+  nu, `python-requests/2.31.0`, un vrai UA de navigateur) passent systématiquement. Détail
+  complet et tableau du test dans `.agents/skills/jobslu-search/url-reference.md`. La skill
+  garde volontairement l'UA honnête par défaut (jamais de bascule vers un UA générique pour
+  contourner le blocage — ce serait de l'usurpation, pas une identification honnête) et
+  détecte explicitement la page de challenge (`CHALLENGE_BLOCKED`) plutôt que de retourner un
+  résultat vide silencieux. Statut au 12/08/2026 soir : toujours bloqué avec l'UA honnête
+  (retesté après plusieurs minutes). Alerte e-mail jobs.lu → `/gmail-sync` → `/apply <url>`
+  reste la couverture de secours quand `CHALLENGE_BLOCKED` apparaît.
 
 ## Adapting Queries
 
