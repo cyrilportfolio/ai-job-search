@@ -109,6 +109,21 @@ portail → `/gmail-sync` → `/apply <url>` sur chaque offre individuelle.
   `/gmail-sync` → `/apply <url>`. Les fiches individuelles (`ApplyForJob.aspx?Id=...`)
   restent lisibles dans un navigateur normal, donc `/apply` fonctionnera sur une URL jobs.lu
   même si le CLI de recherche n'existe pas.
+- **moovijob.com** — un Cloudflare Managed Challenge (JS/cookies, en-tête
+  `cf-mitigated: challenge`, page "Just a moment...") a bloqué la page de listing
+  (`/offres-emploi/jobs-luxembourg`) et même la page d'accueil, de façon reproductible sur
+  plusieurs essais. Constaté et documenté le 12/08/2026. `robots.txt` n'interdit pas les
+  chemins visés — même schéma que `en.jobs.lu` (Akamai) le même jour : ce n'est pas un refus
+  déclaré du site, mais une protection technique active exigeant l'exécution de JS, hors de
+  portée de tout en-tête honnête. Pas de tentative de contournement, même règle que ci-dessus.
+  **Nuance :** la reconnaissance faite le matin même du 12/08/2026 avait lu ces pages sans
+  challenge. Protection récente, sélective (réputation IP ou User-Agent), ou intermittente —
+  pas nécessairement permanente. **À retester dans ~6 mois** via
+  `python3 tools/robots_check.py` puis un fetch direct.
+  Route de remplacement : alertes e-mail Moovijob quotidiennes (comptes existants) →
+  `/gmail-sync` → `/apply <url>`. Egalement candidat à une passe manuelle hebdomadaire via
+  Claude in Chrome (session navigateur réelle, résout le challenge comme un utilisateur
+  normal) si une couverture plus large que les alertes e-mail s'avère nécessaire.
 
 ## Adapting Queries
 
