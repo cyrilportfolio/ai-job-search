@@ -14,7 +14,12 @@ export function writeError(error: string, code: string): void {
   process.stderr.write(JSON.stringify({ error, code }) + "\n")
 }
 
-const UA = "Mozilla/5.0 (compatible; manpower-search-cli/1.0)"
+// Deliberately not "Mozilla/5.0 (compatible; ...)" — that exact prefix (the shape
+// well-known crawlers self-declare with) got flagged by legrand-associates.com's WAF in a
+// controlled A/B test (2026-08-12; see legrand-search/url-reference.md), while this plain
+// tool/version/purpose form passed. Applied here preventively, not because this portal has
+// shown the same behavior.
+const UA = "manpower-search-cli/1.0 (personal job search)"
 
 /** Fetch HTML with exponential backoff on 429/5xx. Returns "" on a 404. */
 export async function htmlFetch(url: string): Promise<string> {

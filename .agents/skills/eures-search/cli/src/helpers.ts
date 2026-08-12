@@ -38,7 +38,12 @@ export function writeError(error: string, code: string): void {
   process.stderr.write(JSON.stringify({ error, code }) + "\n")
 }
 
-const UA = "Mozilla/5.0 (compatible; eures-search-cli/1.0)"
+// Deliberately not "Mozilla/5.0 (compatible; ...)" — that exact prefix (the shape
+// well-known crawlers self-declare with) got flagged by legrand-associates.com's WAF in a
+// controlled A/B test (2026-08-12; see legrand-search/url-reference.md), while this plain
+// tool/version/purpose form passed. Applied here preventively, not because this portal has
+// shown the same behavior.
+const UA = "eures-search-cli/1.0 (personal job search)"
 
 /** JSON fetch with the mandatory crawl-delay, exponential backoff on 429/5xx, and a
  *  parsed-JSON return. Throws on any other non-2xx status (this API returns
