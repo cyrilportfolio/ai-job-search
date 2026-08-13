@@ -3,10 +3,12 @@
 // external CLI framework, so it runs anywhere `bun` is available with zero install beyond
 // the repo clone.
 //
-// This portal sits behind Akamai Bot Manager, which intermittently challenges requests
-// regardless of User-Agent (confirmed via an interleaved A/B test — see helpers.ts and
-// url-reference.md). A CHALLENGE_BLOCKED error means the fetch never reached real content —
-// wait and retry, it is not a "no results" answer.
+// DORMANT SKILL (SKILL.md: enabled: false) — this portal sits behind Akamai Bot Manager,
+// which was confirmed (2026-08-12, see helpers.ts and url-reference.md) to specifically
+// challenge tool-identifying User-Agents, this CLI's honest UA included. By deliberate repo
+// decision, this CLI does not switch to a generic UA to get past that. A CHALLENGE_BLOCKED
+// error means the fetch never reached real content and no UA workaround exists here — see
+// url-reference.md.
 
 import { runSearch, type SearchOpts } from "./commands/search.js"
 import { runDetail, type DetailOpts } from "./commands/detail.js"
@@ -60,9 +62,9 @@ EXAMPLES
   bun run src/cli.ts search -q "developer" -l luxembourg --jobage 7 --format table
   bun run src/cli.ts detail 287136 --format plain
 
-Personal use only. This portal's Akamai bot protection blocks requests intermittently
-(confirmed unrelated to User-Agent) — a CHALLENGE_BLOCKED error means "try again later", not
-"no results". See url-reference.md.
+Dormant skill (see SKILL.md). This portal's Akamai bot protection specifically targets
+tool-identifying UAs, this CLI's honest UA included — expect CHALLENGE_BLOCKED on most calls.
+See url-reference.md.
 `
 
 async function main(): Promise<number> {

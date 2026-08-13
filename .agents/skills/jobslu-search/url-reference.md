@@ -3,9 +3,12 @@
 Public, unauthenticated ASP.NET WebForms pages (server-rendered HTML, no JSON API, no RSS).
 Canonical host is `en.jobs.lu` — `www.jobs.lu` and `jobs.lu` both 301-redirect there.
 
-> Personal use only, per this repo's absolute rule: `en.jobs.lu` was a Sources à réévaluer
-> candidate, not a Source en mode alerte exclusion — see
-> `.claude/skills/job-scraper/search-queries.md`. Keep request volume low regardless.
+> **Status: dormant.** `en.jobs.lu` moved to `.claude/skills/job-scraper/search-queries.md`'s
+> "mode alerte" (email-alert-only) sources on 2026-08-12 — its Akamai bot protection blocks
+> the category of tool-identifying User-Agents this CLI's honest UA belongs to (see below),
+> and this repo's policy is to accept that rather than evade it. The skill and its parsers
+> are kept, verified against real captured markup fixtures, and require no changes to
+> reactivate if the site's policy changes later — see `SKILL.md`'s `enabled: false`.
 
 ## robots.txt
 
@@ -14,30 +17,59 @@ Canonical host is `en.jobs.lu` — `www.jobs.lu` and `jobs.lu` both 301-redirect
 guard function needed in `helpers.ts` (contrast `randstad-search`, whose `robots.txt` lists
 real disallowed paths and needs `assertAllowedUrl`).
 
-## Bot protection: Akamai Bot Manager challenge (read before assuming a fetch failed)
+## Bot protection: Akamai Bot Manager challenge (why this skill is dormant)
 
-`en.jobs.lu` sits behind Akamai, which serves a challenge page (see below) on some requests
-and real content on others. **Confirmed 2026-08-12 via a strictly interleaved A/B test
-(custom CLI UA and a bare-default UA alternated on every single call, ~30s total span): both
-UAs got `200` with real content on every call.** The block is **intermittent and
-UA-independent** — it is not caused by, and does not correlate with, this CLI's honest User
--Agent string.
+`en.jobs.lu` sits behind Akamai. **Confirmed 2026-08-12 by a test that both alternates UAs on
+every single request and checks response *content* (not just HTTP status): the block targets
+tool-identifying User-Agents specifically, and is otherwise stable, not intermittent.**
 
-An earlier same-day test run wrongly concluded the opposite (UA-correlated: honest UA
-blocked 5/5, generic UAs passed every time) and that conclusion briefly lived in this file,
-in `search-queries.md`, and in a project memory. **It was a methodology error, not a
-real finding, and has been retracted everywhere.** That test ran one UA several times, then
-switched and ran the other UA several times — two successive series, not interleaved calls.
-Since the block itself flips on and off over time independent of UA, running same-UA calls
-back-to-back makes whichever time-window each series happened to land in look like a
-UA effect. **Any future test of this block must alternate UAs on every single request
-(A, B, A, B, ...), never run one UA's probes as a block before switching to the other** —
-that is the only design that actually separates a UA cause from a time-based one.
+```
+curl + jobslu-search-cli/1.0 (personal job search)   -> CHALLENGE  (3/3)
+curl + curl's own default UA                         -> OK, 40 real listings (3/3)
+bun  + jobslu-search-cli/1.0 (personal job search)   -> CHALLENGE
+```
 
-Given it's confirmed intermittent and UA-independent, this CLI's own honest-UA requests will
-sometimes hit the challenge and sometimes not, on no predictable schedule discovered so far.
-That is exactly what `CHALLENGE_BLOCKED` (below) exists to handle cleanly — retry later, it
-is not a "no results" answer and not a reason to consider changing the UA.
+Same client, same machine, same moment — the only variable across each pair is the UA
+string. This confirms the original 2026-08-12 morning recon's instinct (a tool-UA-shaped
+block) over two later, wrong readings; both of those are retracted below with the specific
+methodology mistake each one made, because the mistake matters more than the wrong
+conclusion for anyone testing this site again:
+
+1. **First wrong reading ("resolved, intermittent, UA-independent"):** based on three UAs
+   each getting HTTP `200` on a single retest. **`200` is not evidence of real content on
+   this site** — Akamai's challenge page is *also* served with HTTP `200` (see below), so a
+   status-code-only check cannot distinguish "passed" from "challenged." All three of those
+   retest probes may well have been challenged too; the check simply never looked.
+2. **Second wrong reading ("UA-correlated" — directionally right conclusion, wrong test):**
+   did check page content, and did alternate UAs — but in **two successive series** (all of
+   one UA's probes, then all of the other's), not interleaved per-request. That design cannot
+   separate a UA effect from a time-based one, so even though this reading's conclusion
+   happened to match the final, correctly-tested result, it wasn't actually established by
+   that test and got flagged as unverified at the time.
+
+**The methodology that actually settles it, for any future retest of this or a similar
+Akamai-fronted site:** alternate UAs on every single request (A, B, A, B, ...), never as
+successive series — *and* verify response **content**, never HTTP status code alone, since a
+challenge page can return `200`.
+
+### The decision: alert-only, not a generic UA
+
+The block is Akamai's own policy, deliberately targeting the *category* "client that
+announces itself as a tool" — the test above shows `curl`'s own bare default UA passes, not
+because it's specifically allow-listed, but because it doesn't self-identify as anything in
+particular the way `jobslu-search-cli/1.0 (personal job search)` does. Switching this CLI to
+a bare/generic UA would therefore work, but only by making the client stop honestly
+identifying itself — which is exactly the category the site is drawing its line around.
+**This repo does not evade that by adopting a generic/non-descriptive UA.** Doing so wouldn't
+be a lie about any specific fact, but it would defeat the exact distinction the site's
+operator chose to draw, which this repo treats as out of bounds the same way it treats the
+browser-impersonation rule elsewhere in this repo's UA conventions (see `SKILL.md` and
+`.claude/commands/add-portal.md`'s portal-skill contract) even though no specific identity is
+being impersonated here. **Decision (2026-08-12): `en.jobs.lu` moves to `search-queries.md`'s
+email-alert-only sources.** The CLI, parsers, and `CHALLENGE_BLOCKED` detection are kept
+as-built (see `SKILL.md`'s dormant/`enabled: false` status) rather than deleted, since the
+site's policy could change and the parsers are independently verified against real captured
+markup fixtures.
 
 ### Detecting the challenge page
 
@@ -141,9 +173,10 @@ no `href`), so `applyUrl` in the CLI's output is the detail page URL itself.
 - Exponential backoff with jitter on 429/5xx (max 6 retries), `""`/`null` on 404, per the
   portal-skill contract — separate from and checked before the `CHALLENGE_BLOCKED` check
   above, since a challenge page is a 200, not a 404/429/5xx.
-- Test query used during generation and live-verified: `comptable` → 59 results across 2 pages.
-- The Akamai section above is settled (intermittent, UA-independent, confirmed via an
-  interleaved A/B test) — no need to re-open it from scratch, but if `CHALLENGE_BLOCKED`
-  starts firing on most/all calls rather than intermittently, that would be a real change
-  worth re-testing with the interleaved method described above, not reason enough on its own
-  to suspect the UA.
+- Test query used during generation and live-verified: `comptable` → 59 results across 2 pages
+  (both counts observed while the block was inactive, via a UA that passed).
+- The Akamai section above is settled (stable, tool-UA-targeted block, confirmed via an
+  interleaved + content-checked A/B test) and the skill is dormant as a result — no need to
+  re-open it casually. If the site's policy changes and this skill is reactivated, re-verify
+  with the same method (interleaved UAs, content check, not status code alone) before
+  trusting any new reading.

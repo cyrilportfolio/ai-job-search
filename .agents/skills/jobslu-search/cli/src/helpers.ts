@@ -4,16 +4,18 @@
 // assertAllowedUrl-style guard is needed here (contrast randstad-search).
 //
 // The site sits behind Akamai Bot Manager, which serves a "Challenge Validation" page —
-// HTTP 200, ~1.8KB body, not a 403/429 — on some requests and real content on others.
-// Confirmed live 2026-08-12 via a strictly interleaved A/B test (two UAs alternated on every
-// call, never run as two successive series): the block is intermittent and independent of
-// User-Agent, not caused by this CLI's honest UA. See url-reference.md for the confirmed
-// finding and the interleaved-testing method required for any future retest. Regardless of
-// cause, this CLI does NOT switch to a common-tool UA to dodge a block — doing so on purpose
-// would be impersonation, not honest identification, and the portal-skill contract forbids
-// it. Instead htmlFetch detects the challenge page's content explicitly and fails loudly
-// with CHALLENGE_BLOCKED rather than letting a parser run on it and silently returning zero
-// results.
+// HTTP 200, ~1.8KB body, not a 403/429 — instead of real content. Confirmed live 2026-08-12
+// via a test that alternates UAs on every single request AND checks response content (not
+// just HTTP status, since the challenge page is also a 200): the block specifically targets
+// tool-identifying User-Agents, this CLI's honest UA included, and is stable, not
+// intermittent. See url-reference.md for the full test and the two earlier, less careful
+// readings it corrects. Per a deliberate repo decision, this CLI does NOT switch to a
+// generic UA to dodge that — the block is the site's own line between "tool" and "not," and
+// stepping around it defeats that intent even without impersonating anything specific. This
+// skill is dormant (SKILL.md: enabled: false) as a result; htmlFetch still detects the
+// challenge page's content explicitly and fails loudly with CHALLENGE_BLOCKED rather than
+// letting a parser run on it and silently returning zero results, so the code stays correct
+// if the skill is ever reactivated.
 
 export const BASE_URL = "https://en.jobs.lu"
 
@@ -23,9 +25,9 @@ export function writeError(error: string, code: string): void {
 
 // Deliberately not "Mozilla/5.0 (compatible; ...)" — see .claude/commands/add-portal.md's
 // portal-skill contract and legrand-search/url-reference.md for why that prefix is avoided
-// repo-wide. This portal's own Akamai challenge (module comment above) is confirmed
-// independent of UA, so switching UA wouldn't help anyway — the fix is explicit detection
-// below, never a switch to a UA that isn't this tool's own honest identification.
+// repo-wide. Note this doesn't get past this portal's own Akamai challenge (module comment
+// above): that block targets the honest, tool-identifying form used here too, by design, and
+// this repo does not switch to a generic UA to evade it. See url-reference.md.
 const UA = "jobslu-search-cli/1.0 (personal job search)"
 
 const CHALLENGE_MARKER = /<title>\s*challenge validation\s*<\/title>/i
@@ -62,9 +64,10 @@ export async function htmlFetch(url: string): Promise<string> {
     if (CHALLENGE_MARKER.test(text)) {
       const err = new Error(
         "Akamai a affiché une page de challenge (\"Challenge Validation\") au lieu des résultats — " +
-          "blocage intermittent connu sur ce portail (confirmé indépendant de l'UA), " +
-          "réessayer plus tard. Voir url-reference.md pour le détail. Ce n'est pas une " +
-          "erreur de parsing : aucune page réelle n'a été reçue.",
+          "ce portail bloque les UA d'outils par choix délibéré (confirmé, voir url-reference.md), " +
+          "d'où le statut dormant de cette skill (SKILL.md: enabled: false). Ce n'est pas une " +
+          "erreur de parsing : aucune page réelle n'a été reçue, et il n'y a pas de contournement " +
+          "d'UA à tenter ici.",
       ) as Error & { code?: string }
       err.code = "CHALLENGE_BLOCKED"
       throw err

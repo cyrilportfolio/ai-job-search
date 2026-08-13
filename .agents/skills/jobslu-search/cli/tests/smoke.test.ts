@@ -14,9 +14,11 @@ import {
 
 const fixture = (name: string) => readFileSync(join(import.meta.dir, "fixtures", name), "utf-8")
 
-// This portal's Akamai bot protection blocks requests intermittently, confirmed unrelated to
-// User-Agent via an interleaved A/B test (2026-08-12 — see ../url-reference.md). Whether it's
-// blocking at the moment these tests run is unpredictable either way.
+// DORMANT SKILL (SKILL.md: enabled: false) — this portal's Akamai bot protection specifically
+// targets tool-identifying UAs, this CLI's honest UA included (confirmed 2026-08-12, see
+// ../url-reference.md), so these live tests are expected to hit CHALLENGE_BLOCKED on every
+// run, not intermittently. Kept (rather than deleted) so the CLI and detection stay verified
+// if the skill is ever reactivated.
 // CI runs `bun test` directly (not `bun run test`), so package.json's --timeout never applies
 // there — bun:test's own 5000ms-per-test default does, and a live network call can easily
 // exceed that. CI's "Run fixture/mock tests when present" step is upstream convention for
@@ -39,8 +41,8 @@ function assertNotChallengeBlocked(result: CLIResult): void {
   if (code === "CHALLENGE_BLOCKED") {
     throw new Error(
       "CHALLENGE_BLOCKED — Akamai served its challenge page instead of real content. " +
-        "See url-reference.md: this is a confirmed intermittent, UA-independent block. " +
-        "Wait and rerun rather than treating this as a parser bug.",
+        "Expected: this skill is dormant because the block specifically targets tool UAs " +
+        "(see ../url-reference.md). Not a parser bug, and no UA workaround applies.",
     )
   }
 }

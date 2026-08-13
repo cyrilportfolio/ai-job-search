@@ -90,6 +90,24 @@ portail → `/gmail-sync` → `/apply <url>` sur chaque offre individuelle.
 - **indeed.lu, indeed.fr, optioncarriere.lu, lhh.com, andersonwise.lu, lesfrontaliers.lu**
   — exclues par règle absolue de l'utilisateur (audit du 12/08/2026), raison non détaillée
   ici.
+- **en.jobs.lu** (hôte canonique ; `www.jobs.lu`/`jobs.lu` redirigent dessus) — skill
+  `jobslu-search` construite le 12/08/2026 (`.agents/skills/jobslu-search/`), mais
+  **désactivée par décision assumée** plutôt que par contrainte technique non contournable.
+  `robots.txt` absent (404) sur les trois hôtes, aucun refus déclaré à ce niveau — la cause
+  est un challenge Akamai Bot Manager, confirmé le 12/08/2026 via un test qui alterne l'UA à
+  chaque requête **et** vérifie le contenu de la réponse (pas seulement le code HTTP, car la
+  page de challenge répond aussi en `200`) : le blocage cible spécifiquement les UA
+  d'outils (`jobslu-search-cli/1.0 (personal job search)` compris), stable sur la fenêtre
+  testée, alors qu'un UA générique passe systématiquement. Deux lectures précédentes du même
+  jour s'étaient trompées, l'une par mesure invalide (code HTTP seul), l'autre par méthode
+  invalide (deux séries successives par UA au lieu d'une alternance stricte) — détail complet
+  et méthode correcte dans `.agents/skills/jobslu-search/url-reference.md`.
+  **Décision : ne pas basculer sur un UA générique pour passer.** Le site trace une
+  distinction délibérée entre "outil qui s'annonce" et "pas un outil" ; s'y soustraire
+  contournerait cette intention même sans usurper une identité précise. La skill et ses
+  parseurs restent en place (`SKILL.md`: `enabled: false`), vérifiés sur des fixtures réelles,
+  réactivables sans changement de code si la politique du site évolue. Couverture actuelle :
+  alertes e-mail jobs.lu (compte existant) → `/gmail-sync` → `/apply <url>`.
 - **moovijob.com** — un Cloudflare Managed Challenge (JS/cookies, en-tête
   `cf-mitigated: challenge`, page "Just a moment...") a bloqué la page de listing
   (`/offres-emploi/jobs-luxembourg`) et même la page d'accueil, de façon reproductible sur
@@ -97,7 +115,7 @@ portail → `/gmail-sync` → `/apply <url>` sur chaque offre individuelle.
   chemins visés : ce n'est pas un refus déclaré du site, mais une protection technique active
   exigeant l'exécution de JS, hors de portée de tout en-tête honnête. Pas de tentative de
   contournement, même règle que ci-dessus.
-  **Confirmé UA-indépendant (contrairement à `en.jobs.lu`, voir plus bas) :** retesté le
+  **Confirmé UA-indépendant (contrairement à `en.jobs.lu` ci-dessus) :** retesté le
   12/08/2026 avec un UA honnête sans préfixe navigateur (`moovijob-search-cli/1.0 (personal
   job search)`) — toujours 403. Le blocage tient donc à Cloudflare lui-même, pas à un motif
   d'UA suspect. **À retester dans ~6 mois** via `python3 tools/robots_check.py` puis un fetch
@@ -113,29 +131,8 @@ Contrairement aux portails de la section précédente, celles-ci ne sont **pas**
 principe — la reconnaissance disponible est juste insuffisante ou contradictoire pour
 lancer `/add-portal` en confiance. Alerte e-mail en attendant.
 
-*(en.jobs.lu retiré de cette section — skill construite, voir ci-dessous.)*
-
-## Sources couvertes par un skill (historique de reconnaissance)
-
-- **en.jobs.lu** (hôte canonique ; `www.jobs.lu`/`jobs.lu` redirigent dessus) — skill
-  `jobslu-search` générée le 12/08/2026, voir `.agents/skills/jobslu-search/`. `robots.txt`
-  absent (404) sur les trois hôtes, aucun refus déclaré.
-  **Blocage Akamai Bot Manager : confirmé intermittent et indépendant de l'UA**, via un test
-  A/B en alternance stricte (UA custom / UA par défaut alternés à chaque appel, ~30s, le
-  12/08/2026) — `200` avec contenu réel sur les deux UA à chaque appel. Un test intermédiaire
-  ce même jour avait conclu à tort à une corrélation avec l'UA (UA custom bloqué 5/5, UA
-  génériques systématiquement passés) ; cette lecture était une erreur de méthode — deux
-  séries successives par UA au lieu d'une alternance stricte, ce qui confond la cause UA avec
-  la variation temporelle du blocage — et a été corrigée partout (ce fichier,
-  `.agents/skills/jobslu-search/url-reference.md`, `SKILL.md`, le code du CLI, les tests, la
-  mémoire projet). Tout futur test de ce blocage doit alterner les UA à chaque requête,
-  jamais en séries successives. Détail dans `.agents/skills/jobslu-search/url-reference.md`.
-  La skill garde volontairement l'UA honnête par défaut (jamais de bascule vers un UA
-  générique — ce serait de l'usurpation, pas une identification honnête, et de toute façon
-  inutile puisque le blocage est confirmé indépendant de l'UA) et détecte explicitement la
-  page de challenge (`CHALLENGE_BLOCKED`) plutôt que de retourner un résultat vide silencieux.
-  Alerte e-mail jobs.lu → `/gmail-sync` → `/apply <url>` reste la couverture de secours quand
-  `CHALLENGE_BLOCKED` apparaît.
+*(en.jobs.lu retiré de cette section — passée en mode alerte ci-dessus après construction
+et désactivation de la skill `jobslu-search`, pas un simple retour au statut "candidate".)*
 
 ## Adapting Queries
 

@@ -6,9 +6,12 @@ CLI for searching jobs on **en.jobs.lu** (Luxembourg + Grande Région), across a
 **Authentication**: None required.
 **Dependencies**: None (plain `bun` + `fetch`). `bun install` is optional and only pulls dev type defs.
 
-> **Personal use only.** `robots.txt` is absent (no declared refusal) but the site sits
-> behind Akamai Bot Manager, which challenges this CLI's honest User-Agent intermittently
-> (see `../url-reference.md`). Keep volume low.
+> **Dormant skill — not used by `/scrape`.** `robots.txt` is absent (no declared refusal) but
+> the site sits behind Akamai Bot Manager, confirmed to specifically block tool-identifying
+> User-Agents like this CLI's honest one (see `../url-reference.md`). By deliberate repo
+> decision this CLI does not switch to a generic UA to get past that, so expect
+> `CHALLENGE_BLOCKED` on most calls. Coverage for this market goes through jobs.lu's email
+> alerts instead — see `../url-reference.md` and `../SKILL.md`.
 
 ## Installation
 
@@ -30,7 +33,7 @@ The CLI runs without any install because it has zero runtime dependencies.
 All errors are written to **stderr** as `{ "error": "...", "code": "..." }` with exit code `1`.
 
 A `CHALLENGE_BLOCKED` error means Akamai served its challenge page instead of real content —
-retry later, it does not mean zero results.
+not zero results, and (per the note above) not something a retry or UA change fixes here.
 
 ## Quick examples
 
