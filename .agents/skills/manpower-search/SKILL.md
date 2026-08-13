@@ -15,8 +15,17 @@ allowed-tools: Bash(bun run .agents/skills/manpower-search/cli/src/cli.ts *)
 # manpower.lu Search Skill
 
 Search live job listings from manpower.lu's public pages for the Luxembourg interim/CDD/CDI
-market (fr/en postings). No authentication, no API key, **zero runtime dependencies** — runs
-with just `bun`.
+market (**French postings** — see the language note below). No authentication, no API key,
+**zero runtime dependencies** — runs with just `bun`.
+
+## Query language: French, not fr/en
+
+Search in **French**. Verified live 2026-08-13: `search -q "comptable"` returns 5 real
+results, `search -q "accountant"` returns 0. There is also no separate English site to fall
+back to — `/en/jobs/` 301-redirects to `/jobs-2/`, which itself redirects back to
+`/fr/offres/` (the French listing), confirmed the same day. An earlier version of this file
+said "fr/en postings", assuming an English variant existed alongside `/fr/jobs/`; that was
+never actually verified and turned out to be wrong on both counts.
 
 ## Two search modes (read this before using `--query`)
 
@@ -108,3 +117,5 @@ All errors are written to **stderr** as `{ "error": "...", "code": "..." }` and 
   the default `--scan-pages 5` and the 12-page cap (the whole site) exist for this reason.
 - Job IDs are `<numeric>-<slug>` (e.g. `15170-office-manager-junior-support-comptable-m-f-x`) —
   pass them as-is to `detail`.
+- No English version of the site exists — `/en/jobs/` redirects (301) to `/jobs-2/`, which
+  redirects again to `/fr/offres/`, the same French listing. Confirmed live 2026-08-13.

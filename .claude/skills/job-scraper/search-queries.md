@@ -77,6 +77,29 @@ When evaluating results, verify the job location is within reasonable commute di
 
 Your working languages and levels are in CLAUDE.md's Languages table. When filtering scraped results, apply `04-job-evaluation.md`'s Language Gate: a posting requiring a language you haven't declared at all is excluded; a posting requiring a higher level than you declared in a language you do work in is not excluded, flag it clearly instead (see `job-scraper/SKILL.md`'s Step 3 "Quick Fit Assessment" for how the flag surfaces in `/scrape` output). Postings simply *written* in a language you don't work in, that don't require it on the job, are fine.
 
+## Langue d'annonce par portail
+
+À distinguer du Language Filter ci-dessus (langues *du candidat*, pour exclure/flaguer des
+offres après scraping) : cette section documente, portail par portail, la langue réelle des
+annonces et donc la langue dans laquelle une requête `--query`/`-q` doit être formulée pour
+obtenir des résultats sur ce portail précis.
+
+| Portail | Langue(s) vérifiée(s) | Preuve |
+|---|---|---|
+| `greenfield-search` | Anglais uniquement | `comptable` → 0 résultat, `accountant` → résultats réels (vérifié 13/08/2026 — `.agents/skills/greenfield-search/url-reference.md`) |
+| `legrand-search` | Français (annonces Luxembourg) / néerlandais-anglais (annonces Belgique) | `.agents/skills/legrand-search/SKILL.md`, vérifié 12/08/2026 |
+| `alleyesonme-search` | Français/anglais | `.agents/skills/alleyesonme-search/SKILL.md` ("~3,150 offers, French/English") |
+| `manpower-search` | Français | `comptable` → 5 résultats, `accountant` → 0 (vérifié 13/08/2026). **Limite de la preuve** : `accountant` → 0 résultat établit qu'aucune annonce ne contient ce terme, pas qu'aucune annonce anglaise n'existe — mais pour construire des requêtes, chercher en français. Confirmé séparément le même jour : pas de version anglaise du site (`/en/jobs/` redirige en 301 vers `/jobs-2/`, qui redirige à son tour vers `/fr/offres/`, la même liste française) — corrige la description antérieure du `SKILL.md` ("fr/en postings"), qui n'avait jamais été vérifiée. |
+| `randstad-search` | Français (chemin `/emplois/...`, utilisé par le CLI) — un chemin anglais existe (`/en/jobs/...`, confirmé 200 avec du contenu réellement anglais le 13/08/2026) mais **le CLI ne le construit pas aujourd'hui**, seulement `/emplois/...` (voir `helpers.ts`) | `robots.txt` ne bloque que les combinaisons multi-filtres et le radius-search sous `/en/jobs/` (`Disallow: /en/jobs/*,*/`, `Disallow: /en/jobs/radius`), jamais le chemin de base — garde-fou existant, à ne jamais contourner ni retirer |
+| `eures-search` | Multilingue — `--lang <code>` paramétrable, défaut `fr` | `.agents/skills/eures-search/SKILL.md`/`url-reference.md` (`requestLanguage`) |
+| `francetravail` | Français (présumé — marché national France) | **Non vérifié : aucune skill `francetravail-search` n'existe dans ce dépôt**, aucune autre trace non plus. Ligne ajoutée à titre de repère marché uniquement, pas comme un fait vérifié sur un portail installé — à confirmer si/quand une skill est construite via `/add-portal`. |
+
+**Phase 5** : la génération de requêtes par portail devra décliner chaque intitulé de métier
+dans la langue réelle de chaque portail (tableau ci-dessus), pas seulement dans les langues
+déclarées du candidat (Language Filter ci-dessus) — un portail anglophone comme
+`greenfield-search` ne renverra rien pour une requête purement en français, et inversement
+pour `manpower-search`.
+
 ## Date Filter
 
 Only include jobs posted within the last 14 days, or with an application deadline that has not yet passed. If a posting date cannot be determined, include it but flag as "date unknown".
