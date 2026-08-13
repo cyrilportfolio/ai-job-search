@@ -1,0 +1,20 @@
+{
+  "name": "greenfield-cli",
+  "version": "1.0.0",
+  "description": "CLI for greenfield.lu, a Luxembourg recruitment firm — sitemap enumeration + detail-page parsing (no server-side search, no auth, zero runtime dependencies).",
+  "type": "module",
+  "main": "src/cli.ts",
+  "bin": {
+    "greenfield-search": "src/cli.ts"
+  },
+  "scripts": {
+    "start": "bun run src/cli.ts",
+    "test": "bun test --timeout 30000",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/bun": "1.3.14"
+  }
+}
