@@ -92,7 +92,7 @@ obtenir des résultats sur ce portail précis.
 | `manpower-search` | Français | `comptable` → 5 résultats, `accountant` → 0 (vérifié 13/08/2026). **Limite de la preuve** : `accountant` → 0 résultat établit qu'aucune annonce ne contient ce terme, pas qu'aucune annonce anglaise n'existe — mais pour construire des requêtes, chercher en français. Confirmé séparément le même jour : pas de version anglaise du site (`/en/jobs/` redirige en 301 vers `/jobs-2/`, qui redirige à son tour vers `/fr/offres/`, la même liste française) — corrige la description antérieure du `SKILL.md` ("fr/en postings"), qui n'avait jamais été vérifiée. |
 | `randstad-search` | Français (chemin `/emplois/...`, utilisé par le CLI) — un chemin anglais existe (`/en/jobs/...`, confirmé 200 avec du contenu réellement anglais le 13/08/2026) mais **le CLI ne le construit pas aujourd'hui**, seulement `/emplois/...` (voir `helpers.ts`) | `robots.txt` ne bloque que les combinaisons multi-filtres et le radius-search sous `/en/jobs/` (`Disallow: /en/jobs/*,*/`, `Disallow: /en/jobs/radius`), jamais le chemin de base — garde-fou existant, à ne jamais contourner ni retirer |
 | `eures-search` | Multilingue — `--lang <code>` paramétrable, défaut `fr` | `.agents/skills/eures-search/SKILL.md`/`url-reference.md` (`requestLanguage`) |
-| `francetravail` | Français (présumé — marché national France) | **Non vérifié : aucune skill `francetravail-search` n'existe dans ce dépôt**, aucune autre trace non plus. Ligne ajoutée à titre de repère marché uniquement, pas comme un fait vérifié sur un portail installé — à confirmer si/quand une skill est construite via `/add-portal`. |
+| `francetravail-search` | Français | `motsCles=comptable` → 165 résultats réels (Luxembourg, `paysContinent=99137`) et 239 (Moselle, `departement=57`), titres et descriptions en français, vérifié 13/08/2026 — `.agents/skills/francetravail-search/url-reference.md` |
 
 **Phase 5** : la génération de requêtes par portail devra décliner chaque intitulé de métier
 dans la langue réelle de chaque portail (tableau ci-dessus), pas seulement dans les langues
@@ -147,6 +147,11 @@ portail → `/gmail-sync` → `/apply <url>` sur chaque offre individuelle.
   `/gmail-sync` → `/apply <url>`. Egalement candidat à une passe manuelle hebdomadaire via
   Claude in Chrome (session navigateur réelle, résout le challenge comme un utilisateur
   normal) si une couverture plus large que les alertes e-mail s'avère nécessaire.
+  **Couverture indirecte via `francetravail-search`**, qui redistribue les annonces MOOVIJOB
+  (39/50 des offres LU observées le 13/08/2026) avec l'URL d'origine pour postuler — ce n'est
+  pas un scraping de moovijob.com (l'API France Travail est la seule source interrogée), donc
+  ça ne contredit pas l'exclusion ci-dessus, mais ça réduit en pratique la dépendance aux
+  alertes e-mail pour une partie de ces offres.
 
 ## Sources à réévaluer (candidates /add-portal, pas encore construites)
 
